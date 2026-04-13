@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tg">
+<head>
+    <meta charset="UTF-8">
+    <title>Журнали Мактабӣ 18х24</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
+        .container { max-width: 100%; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+        
+        /* Майдони сарлавҳаи холӣ */
+        .main-header-input {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .main-header-input input {
+            width: 90%;
+            border: none;
+            border-bottom: 2px solid #000;
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            padding: 10px;
+            outline: none;
+        }
+
+        .date-row {
+            text-align: right;
+            margin-bottom: 20px;
+            padding-right: 5%;
+        }
+        .date-row input {
+            border: none;
+            border-bottom: 1px solid #000;
+            width: 150px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .info-header {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .info-header input {
+            border: none;
+            border-bottom: 2px solid #1a73e8;
+            padding: 5px;
+            font-size: 14px;
+            width: 200px;
+            text-align: center;
+            outline: none;
+        }
+
+        .no-print { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
+        .btn { padding: 8px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; font-size: 13px; }
+        .btn-print { background: #e67e22; }
+        .btn-calc { background: #27ae60; }
+
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #000; padding: 2px; text-align: center; font-size: 11px; }
+        th { background: #f2f2f2; height: 35px; font-weight: bold; }
+        
+        .name-col { width: 150px; text-align: left; padding-left: 5px; }
+        .num-col { width: 25px; }
+        .gender-col { width: 35px; }
+        .total-col { width: 45px; font-weight: bold; background: #fff8e1; color: #d35400; }
+
+        input { border: none; width: 100%; font-size: 11px; outline: none; background: transparent; }
+        input[type="number"] { text-align: center; -moz-appearance: textfield; appearance: textfield; }
+        input::-webkit-inner-spin-button, input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .stats-area { margin-top: 15px; display: flex; gap: 30px; border-top: 2px solid #34495e; padding-top: 10px; }
+        .stats-table { width: auto; border: 1px solid #000; }
+        .stats-table th { background: #34495e; color: white; }
+        .stats-table td { text-align: left; padding: 4px 10px; border: 1px solid #000; font-weight: bold; }
+
+        @media print {
+            @page { size: landscape; margin: 5mm; }
+            .no-print { display: none !important; }
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; padding: 0; }
+            input::placeholder { color: transparent; }
+            th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .total-col { background: #fff8e1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="no-print">
+        <button class="btn btn-calc" onclick="calculate()">📊 Ҳисоб кардани омор</button>
+        <button class="btn btn-print" onclick="window.print()">🖨️ Чоп кардан (Landscape)</button>
+    </div>
+
+    <div class="main-header-input">
+        <input type="text" id="main-title" placeholder="Сарлавҳаро дар ин ҷо нависед (масал: РӮЙХАТИ ОМӮЗГОРОН...)" oninput="saveAll()">
+    </div>
+
+    <div class="date-row">
+        <input type="text" id="current-date" placeholder="сана" oninput="saveAll()">
+    </div>
+
+    <div class="info-header">
+        <input type="text" id="class-info" placeholder="Синф (масал: 9 'А')" oninput="saveAll()">
+        <input type="text" id="teacher-info" placeholder="Номи муаллим" oninput="saveAll()">
+        <input type="text" id="year-info" placeholder="Соли таҳсил" oninput="saveAll()">
+    </div>
+
+    <table id="mainTable">
+        <thead>
+            <tr id="headRow">
+                <th class="num-col">№</th>
+                <th class="name-col">Ному насаб</th>
+                <th class="gender-col">Ҷинс</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+
+    <div class="stats-area">
+        <table class="stats-table">
+            <tr><th colspan="2">Натиҷаи умумии синф</th></tr>
+            <tr><td>Писарон (+):</td><td id="mCount">0</td></tr>
+            <tr><td>Духтарон (-):</td><td id="fCount">0</td></tr>
+            <tr><td>Баҳои миёнаи умумӣ:</td><td id="avgTotal">0</td></tr>
+        </table>
+        <table class="stats-table">
+            <thead>
+                <tr><th colspan="2">Омори баҳоҳо</th></tr>
+            </thead>
+            <tbody id="gradeStatsBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const subCount = 18;
+    const stuCount = 24;
+
+    window.onload = function() {
+        const headRow = document.getElementById('headRow');
+        for(let i=1; i<=subCount; i++) {
+            let th = document.createElement('th');
+            th.innerHTML = `<input type="text" id="subj-${i}" placeholder="Фанни ${i}" style="text-align:center; font-weight:bold;" oninput="saveAll()">`;
+            headRow.appendChild(th);
+        }
+        let thTotal = document.createElement('th');
+        thTotal.className = "total-col";
+        thTotal.textContent = "Миёна";
+        headRow.appendChild(thTotal);
+
+        const tbody = document.getElementById('tableBody');
+        for(let j=1; j<=stuCount; j++) {
+            let tr = document.createElement('tr');
+            let html = `<td>${j}</td>
+                        <td class="name-col"><input type="text" class="stu-name" placeholder="Номи хонанда" oninput="saveAll()"></td>
+                        <td><input type="text" class="stu-gender" placeholder="+/-" style="text-align:center;" oninput="saveAll()"></td>`;
+            for(let k=0; k<subCount; k++) {
+                html += `<td><input type="number" class="g-inp" min="2" max="10" oninput="saveAll()"></td>`;
+            }
+            html += `<td class="row-total total-col">0</td>`;
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        }
+        loadAll();
+    }
+
+    function saveAll() {
+        const data = {
+            title: document.getElementById('main-title').value,
+            date: document.getElementById('current-date').value,
+            header: {
+                class: document.getElementById('class-info').value,
+                teacher: document.getElementById('teacher-info').value,
+                year: document.getElementById('year-info').value
+            },
+            subjects: [],
+            students: []
+        };
+        for(let i=1; i<=subCount; i++) data.subjects.push(document.getElementById(`subj-${i}`).value);
+        document.querySelectorAll('#tableBody tr').forEach(row => {
+            let student = {
+                name: row.querySelector('.stu-name').value,
+                gender: row.querySelector('.stu-gender').value,
+                grades: []
+            };
+            row.querySelectorAll('.g-inp').forEach(inp => student.grades.push(inp.value));
+            data.students.push(student);
+        });
+        localStorage.setItem('schoolJournalData', JSON.stringify(data));
+        calculate();
+    }
+
+    function loadAll() {
+        const savedData = localStorage.getItem('schoolJournalData');
+        if (!savedData) return;
+        const data = JSON.parse(savedData);
+        document.getElementById('main-title').value = data.title || '';
+        document.getElementById('current-date').value = data.date || '';
+        if(data.header) {
+            document.getElementById('class-info').value = data.header.class || '';
+            document.getElementById('teacher-info').value = data.header.teacher || '';
+            document.getElementById('year-info').value = data.header.year || '';
+        }
+        data.subjects.forEach((s, i) => { if(document.getElementById(`subj-${i+1}`)) document.getElementById(`subj-${i+1}`).value = s; });
+        let rows = document.querySelectorAll('#tableBody tr');
+        data.students.forEach((s, i) => {
+            if(rows[i]) {
+                rows[i].querySelector('.stu-name').value = s.name;
+                rows[i].querySelector('.stu-gender').value = s.gender;
+                let gInps = rows[i].querySelectorAll('.g-inp');
+                s.grades.forEach((g, j) => { if(gInps[j]) gInps[j].value = g; });
+            }
+        });
+        calculate();
+    }
+
+    function calculate() {
+        let rows = document.querySelectorAll('#tableBody tr');
+        let m = 0, f = 0, totalSumAll = 0, gradeCountAll = 0;
+        let stats = {}; for(let i=2; i<=10; i++) stats[i] = 0;
+
+        rows.forEach(row => {
+            let genderVal = row.querySelector('.stu-gender').value.trim();
+            if(genderVal === '+') m++; else if(genderVal === '-') f++;
+            let inputs = row.querySelectorAll('.g-inp');
+            let sSum = 0, sCount = 0;
+            inputs.forEach(inp => {
+                let v = parseInt(inp.value);
+                if(v >= 2 && v <= 10) { sSum += v; sCount++; stats[v]++; totalSumAll += v; gradeCountAll++; }
+            });
+            row.querySelector('.row-total').textContent = sCount > 0 ? (sSum / sCount).toFixed(1) : 0;
+        });
+        document.getElementById('mCount').textContent = m;
+        document.getElementById('fCount').textContent = f;
+        document.getElementById('avgTotal').textContent = gradeCountAll > 0 ? (totalSumAll/gradeCountAll).toFixed(2) : 0;
+        let sHtml = ""; for(let i=10; i>=2; i--) sHtml += `<tr><td>Баҳои ${i}</td><td>${stats[i]}</td></tr>`;
+        document.getElementById('gradeStatsBody').innerHTML = sHtml;
+    }
+</script>
+</body>
+</html>
